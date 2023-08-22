@@ -8,17 +8,22 @@ using Microsoft.EntityFrameworkCore;
 using JokesWebApp.Data;
 using JokesWebApp.Models;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Identity;
+
 
 namespace JokesWebApp.Controllers
 {
     public class JokesController : Controller
     {
         private readonly ApplicationDbContext _context;
+        private readonly UserManager<IdentityUser> _userManager;
 
-        public JokesController(ApplicationDbContext context)
+        public JokesController(ApplicationDbContext context, UserManager<IdentityUser> userManager)
         {
             _context = context;
+            _userManager = userManager;
         }
+
 
         // GET: Jokes
         public async Task<IActionResult> Index()
@@ -77,14 +82,27 @@ namespace JokesWebApp.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Create([Bind("Id,JokeQuestion,JokeAnswer")] Joke joke)
         {
+            IdentityUser currentUser = await _userManager.GetUserAsync(User);
+            if (currentUser != null)
+            {
+                joke.User = currentUser.UserName; // Associate the user's name with the joke
+            }
             if (ModelState.IsValid)
             {
+
                 _context.Add(joke);
                 await _context.SaveChangesAsync();
                 return RedirectToAction(nameof(Index));
             }
-            return View(joke);
+            else
+            {
+                ModelState.AddModelError("", "User information not available.");
+                return View(joke);
+            }
         }
+
+
+
 
         // GET: Jokes/Edit/5
         [Authorize]
