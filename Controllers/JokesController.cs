@@ -24,7 +24,6 @@ namespace JokesWebApp.Controllers
             _userManager = userManager;
         }
 
-
         // GET: Jokes
         public async Task<IActionResult> Index()
         {
@@ -101,13 +100,11 @@ namespace JokesWebApp.Controllers
             }
         }
 
-
-
-
         // GET: Jokes/Edit/5
         [Authorize]
         public async Task<IActionResult> Edit(int? id)
         {
+            IdentityUser currentUser = await _userManager.GetUserAsync(User);
             if (id == null || _context.Joke == null)
             {
                 return NotFound();
@@ -118,7 +115,15 @@ namespace JokesWebApp.Controllers
             {
                 return NotFound();
             }
-            return View(joke);
+            if (currentUser != null)
+            {
+                if (joke.User == currentUser.UserName)
+                {
+                    return View(joke);
+                }
+            }
+            TempData["ErrorMessage"] = "You do not have permission to access";
+            return RedirectToAction(nameof(Index));
         }
 
         // POST: Jokes/Edit/5
@@ -129,6 +134,11 @@ namespace JokesWebApp.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Edit(int id, [Bind("Id,JokeQuestion,JokeAnswer")] Joke joke)
         {
+            IdentityUser currentUser = await _userManager.GetUserAsync(User);
+            if (currentUser != null)
+            {
+                joke.User = currentUser.UserName; // Associate the user's name with the joke
+            }
             if (id != joke.Id)
             {
                 return NotFound();
@@ -161,6 +171,7 @@ namespace JokesWebApp.Controllers
         [Authorize]
         public async Task<IActionResult> Delete(int? id)
         {
+            IdentityUser currentUser = await _userManager.GetUserAsync(User);
             if (id == null || _context.Joke == null)
             {
                 return NotFound();
@@ -172,8 +183,15 @@ namespace JokesWebApp.Controllers
             {
                 return NotFound();
             }
-
-            return View(joke);
+            if (currentUser != null)
+            {
+                if (joke.User == currentUser.UserName)
+                {
+                    return View(joke);
+                }
+            }
+            TempData["ErrorMessage"] = "You do not have permission to access";
+            return RedirectToAction(nameof(Index));
         }
 
         // POST: Jokes/Delete/5
